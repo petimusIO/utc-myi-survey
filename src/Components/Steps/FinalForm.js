@@ -66,12 +66,21 @@ export default function FinalForm() {
       let score = 0;
       let count = 0;
       
-      for (const key in userData) {
-        if (!key.includes("statement") && !isNaN(userData[key])) {
-          score += parseInt(userData[key]);
-          count++;
-        }
+    // Define which fields are actual questions
+    const questionFields = [
+      "purpose", "values", "guidance", "systems", "development",
+      "time_energy", "story", "speaking", "vision", "evaluation"
+    ];
+  
+    // Only process fields that are in our whitelist
+    for (const key of questionFields) {
+      if (userData[key] && !isNaN(userData[key])) {
+        const value = parseInt(userData[key]);
+        score += value;
+        count++;
+        console.log(`Question ${key}: ${value} points`);
       }
+    }
       
       return score;
     };
@@ -150,7 +159,7 @@ export default function FinalForm() {
     <div className="max-w-3xl mx-auto">
 
       <motion.div
-        className="bg-white rounded-lg p-4"
+        className="bg-white rounded-lg p-2"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
@@ -178,55 +187,69 @@ export default function FinalForm() {
           <AnimatePresence>
             {scoreComplete && (
               <motion.div 
-                className="mt-4 py-2 px-3 bg-gray-50 rounded-lg"
+                className="mt-2 py-2 px-3 bg-gradient-to-r from-gray-50 to-white rounded-lg border border-gray-100 shadow-sm"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
               >
-                <h3 className="font-bold text-lg mb-1">{getCategoryName()}</h3>
-                <p className="text-sm">{getCategoryDescription()}</p>
+                <h3 className="font-bold text-base mb-0.5 text-pmmGrit">{getCategoryName()}</h3>
+                <p className="text-xs text-gray-600">{getCategoryDescription()}</p>
               </motion.div>
             )}
           </AnimatePresence>
         </motion.div>
         
-        {/* Action Plan Section - Appears after score completes */}
+        {/* Action Plan - Compact & Modern */}
         <AnimatePresence>
           {scoreComplete && (
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1.5, duration: 0.8 }}
-              className="mb-6"
+              className="mb-3"
             >
-              <h2 className="text-lg font-bold mb-2">✅ Your Personalized Action Plan</h2>
-              <div className="bg-gray-50 p-3 rounded-lg">
-                <h3 className="font-bold text-md mb-1">→ For {getCategoryName()}:</h3>
-                <ul className="list-disc pl-4 space-y-1 text-sm">
-                  {actionPlans[category] && actionPlans[category].map((action, index) => (
-                    <li key={index}>{action}</li>
-                  ))}
-                </ul>
+              <div className="flex items-center mb-1">
+                <span className="text-pmmGrit mr-1.5">✨</span>
+                <h2 className="text-base font-bold">Your Action Plan</h2>
+              </div>
+              
+              <div className="bg-white border border-gray-100 rounded-lg shadow-sm overflow-hidden">
+                {actionPlans[category] && actionPlans[category].map((action, index) => (
+                  <div 
+                    key={index} 
+                    className={`py-2 px-3 flex items-start text-xs ${
+                      index !== actionPlans[category].length - 1 ? 'border-b border-gray-100' : ''
+                    }`}
+                  >
+                    <div className="bg-pmmGrit text-white w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 mr-2 mt-0.5">
+                      <span className="text-[10px]">{index + 1}</span>
+                    </div>
+                    <span>{action}</span>
+                  </div>
+                ))}
               </div>
             </motion.div>
           )}
         </AnimatePresence>
         
-        {/* Collapsible Bonus Section - Appears after action plan */}
+        {/* Bonus Section - Compact & Cleaner */}
         <AnimatePresence>
           {scoreComplete && (
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 3, duration: 0.8 }}
-              className="mb-6"
+              className="mb-3"
             >
               <button 
-                className="text-left w-full flex justify-between items-center"
+                className="text-left w-full flex justify-between items-center bg-white border border-gray-100 rounded-lg px-3 py-2 shadow-sm hover:shadow-md transition-shadow duration-200"
                 onClick={() => setShowBonus(!showBonus)}
               >
-                <h2 className="text-lg font-bold">⏳ BONUS: 1-Day Influence Accelerator</h2>
-                <span>{showBonus ? '▲' : '▼'}</span>
+                <div className="flex items-center">
+                  <span className="text-pmmGrit mr-1.5">⏳</span>
+                  <h2 className="text-sm font-bold">1-Day Influence Accelerator</h2>
+                </div>
+                <span className="text-xs text-pmmGrit">{showBonus ? '−' : '+'}</span>
               </button>
               
               <AnimatePresence>
@@ -237,31 +260,31 @@ export default function FinalForm() {
                     exit={{ height: 0, opacity: 0 }}
                     className="overflow-hidden"
                   >
-                    <p className="text-sm mb-2">A quick-start plan to boost your influence in 24 hours.</p>
+                    <div className="text-[10px] text-gray-500 mt-1 mb-2 pl-2">
+                      A quick-start plan to boost your influence in 24 hours
+                    </div>
                     
-                    <div className="space-y-2">
-                      {/* Morning */}
-                      <div className="bg-gray-50 p-3 rounded-lg">
-                        <h3 className="font-bold text-sm mb-1">Morning:</h3>
-                        <ul className="list-disc pl-4 space-y-1 text-xs">
+                    <div className="space-y-1">
+                      {/* Time blocks - more compact */}
+                      <div className="bg-white border border-gray-100 p-2 rounded-lg shadow-sm">
+                        <h3 className="font-bold text-xs text-pmmGrit mb-1">Morning</h3>
+                        <ul className="space-y-1 pl-4 text-[10px] list-disc text-gray-700">
                           <li>Reflect on your values and write down your personal mission.</li>
                           <li>Text or call 3 people and encourage them specifically.</li>
                         </ul>
                       </div>
                       
-                      {/* Afternoon */}
-                      <div className="bg-gray-50 p-3 rounded-lg">
-                        <h3 className="font-bold text-sm mb-1">Afternoon:</h3>
-                        <ul className="list-disc pl-4 space-y-1 text-xs">
+                      <div className="bg-white border border-gray-100 p-2 rounded-lg shadow-sm">
+                        <h3 className="font-bold text-xs text-pmmGrit mb-1">Afternoon</h3>
+                        <ul className="space-y-1 pl-4 text-[10px] list-disc text-gray-700">
                           <li>Share a short story or lesson online (or journal it).</li>
                           <li>Evaluate how you spend your time – cut one thing that drains your focus.</li>
                         </ul>
                       </div>
                       
-                      {/* Evening */}
-                      <div className="bg-gray-50 p-3 rounded-lg">
-                        <h3 className="font-bold text-sm mb-1">Evening:</h3>
-                        <ul className="list-disc pl-4 space-y-1 text-xs">
+                      <div className="bg-white border border-gray-100 p-2 rounded-lg shadow-sm">
+                        <h3 className="font-bold text-xs text-pmmGrit mb-1">Evening</h3>
+                        <ul className="space-y-1 pl-4 text-[10px] list-disc text-gray-700">
                           <li>Schedule a growth activity for the next 7 days.</li>
                           <li>Write 3 things you want to be known for.</li>
                         </ul>
@@ -274,22 +297,22 @@ export default function FinalForm() {
           )}
         </AnimatePresence>
         
-        {/* Call to Action - Appears last */}
+        {/* CTA Section - Compact & Attractive */}
         <AnimatePresence>
           {scoreComplete && (
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 4.5, duration: 0.8 }}
-              className="text-center"
+              className="text-center mt-4"
             >
-              <p className="mb-3 text-sm font-medium">Ready to level up your leadership?</p>
-              <div className="flex flex-col gap-2">
+              <div className="bg-gradient-to-r from-gray-50 to-white border border-gray-100 rounded-lg p-3 shadow-sm">
+                <p className="text-xs font-medium mb-2 text-gray-700">Ready to level up your leadership?</p>
                 <a 
                   href="https://learn.liveprosperous.com/pages/focus-fridays-signup-form" 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  className="bg-pmmGrit hover:bg-pmmBlue text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-300 text-sm text-center cursor-pointer"
+                  className="block bg-pmmGrit hover:bg-pmmBlue text-white font-bold py-2 px-3 rounded-lg shadow-sm transition duration-300 text-sm text-center cursor-pointer"
                 >
                   Join Focus Friday Email
                 </a>
