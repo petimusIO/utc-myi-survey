@@ -1,181 +1,303 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { StepperContext } from '../../contexts/StepperContext';
 import axios from 'axios';
-import { motion } from "framer-motion";
-import PillarResults from '../PillarResults';
-//import './FinalForm.css'; // Assuming you have a CSS file for additional styling
+import { motion, AnimatePresence } from "framer-motion";
+import UTCLogo from "../img/UTC-logo.png";
 
 const api = axios.create({
-  baseURL: `https://utc-survey-api-1.onrender.com/user`
+  baseURL: `https://petimus-utc-survey-api.onrender.com/user`//`http://localhost:3001/user`
 });
-
-const strategies = {
-  "Thoughts/Feelings": [
-    "It’s normal for people to not focus on themselves.",
-    "Not managing stress can impact your ability to succeed.",
-    "Stopping and reflecting can help center you.",
-    "Make little things like breathing a practice to ground you."
-  ],
-  "Fires": [
-    "Becoming aware of where you are emotionally is vitally important.",
-    "Identify and focus on the positives around you.",
-    "Do something! Don’t avoid issues. Address them one step at a time.",
-    "Change your approach. Visualize a path of success."
-  ],
-  "Control": [
-    "Take the time to reflect on what you really want.",
-    "Reflect on how expectations from others have impacted you.",
-    "There is power in dreaming, and imagination.",
-    "Live in alignment with your values."
-  ],
-  "Focus": [
-    "Be clear with your goals. Know your conditions & capacity.",
-    "Self-care allows you to plan and prepare for your journey",
-    "Identify your needs.",
-    "Seek support to help."
-  ],
-  "Help-Me": [
-    "Connecting with people is vital to your health",
-    "Your team feeds your soul",
-    "Tend to your relationships to keep them healthy",
-    "Find the balance of agents and guides to support you"
-  ],
-  "Action-Plan": [
-    "Don’t live life on autopilot.",
-    "Create a routine to help you with your goals.",
-    "Reflect on how bad you want to accomplish your goal.",
-    "Commit to your goals and assess them weekly."
-  ],
-  "Adjusting": [
-    "Flexibility is crucial for life fulfillment.",
-    "If frustrated, take a moment, breath, and refocus.",
-    "Broaden your perspective to see the entire picture.",
-    "All obstacles aren’t roadblocks. You can still get to your destination."
-  ],
-  "Help-Others": [
-    "Remember, some people are scared to ask for help.",
-    "Living authentically will help others do the same.",
-    "Intentionally listen and watch for what people are saying.",
-    "Create a safe space and listen without judgment."
-  ]
-};
-
-const links = {
-  "Thoughts/Feelings": "https://learn.liveprosperous.com/courses/bepresent",
-  "Fires": "https://learn.liveprosperous.com/courses/beafirefighter",
-  "Control": "https://learn.liveprosperous.com/courses/beanauthor",
-  "Focus": "https://learn.liveprosperous.com/courses/beintentional",
-  "Help-Me": "https://learn.liveprosperous.com/courses/beamanager",
-  "Action-Plan": "https://learn.liveprosperous.com/courses/beapilot",
-  "Adjusting": "https://learn.liveprosperous.com/courses/beagile",
-  "Help-Others": "https://learn.liveprosperous.com/courses/bealifeguard"
-};
-
-const statement2pillar = {
-  "Help-Me": "Be a Manager",
-  "Action-Plan": "Be a Pilot",
-  "Help-Others": "Be a Lifeguard",
-  "Thoughts/Feelings": "Be Present",
-  "Control": "Be an Author",
-  "Focus": "Be Intentional",
-  "Fires": "Be a Firefighter",
-  "Adjusting": "Be Agile",
-};
 
 const containerVariants = {
   hidden: { opacity: 1, scale: 0 },
   visible: {
     opacity: 1, scale: 1,
     transition: {
-      delayChildren: 0.7,
-      staggerChildren: 1.3
+      delayChildren: 0.3,
+      staggerChildren: 0.2
     }
   }
 };
 
+// Updated item variants to enable custom delays
 const itemVariants = {
-  hidden: { y: 20, opacity: 0 },
-  visible: {
-    y: 0, opacity: 1
-  }
+  hidden: { opacity: 0, y: 20 },
+  visible: (custom) => ({
+    opacity: 1,
+    y: 0,
+    transition: { 
+      delay: custom, 
+      duration: 0.8,
+      ease: "easeOut"
+    }
+  })
+};
+
+const actionPlans = {
+  dormant: [
+    "Clarify Your Mission – Write a personal mission statement.",
+    "Start Small – Choose one habit that aligns with your values and commit for 7 days.",
+    "Find a Mentor – Seek someone to guide and challenge you."
+  ],
+  growing: [
+    "Document Your Growth Plan – Set a goal in 3 areas: Personal, Relational, Professional.",
+    "Build Your Circle – Surround yourself with 2-3 growth-minded individuals.",
+    "Share Your Story – Post or journal one lesson weekly to reinforce your voice."
+  ],
+  high: [
+    "Mentor Others – Invest weekly in someone coming behind you.",
+    "Expand Your Platform – Speak, write, or serve in a new space.",
+    "Audit & Adjust – Quarterly reflection on goals, growth, and gaps."
+  ]
 };
 
 export default function FinalForm() {
   const [backendData, setBackendData] = useState({});
   const { userData } = useContext(StepperContext);
-
+  const [totalScore, setTotalScore] = useState(0);
+  const [displayScore, setDisplayScore] = useState(0);
+  const [category, setCategory] = useState("");
+  const [showBonus, setShowBonus] = useState(false);
+  const [scoreComplete, setScoreComplete] = useState(false);
+  
   useEffect(() => {
-    fetch("/api/data")
-      .then(response => response.json())
-      .then(data => setBackendData(data));
-  }, []);
-
-  useEffect(() => {
-    const addUser = async () => {
-      const res = await api.post("/", userData);
-      console.log("HERE IS THE RESPONSE...", res);
+    // Calculate total score from survey responses
+    const calculateScore = () => {
+      let score = 0;
+      let count = 0;
+      
+      for (const key in userData) {
+        if (!key.includes("statement") && !isNaN(userData[key])) {
+          score += parseInt(userData[key]);
+          count++;
+        }
+      }
+      
+      return score;
     };
-    addUser();
+    
+    const score = calculateScore();
+    setTotalScore(score);
+    
+    // Start with 0 and animate up to the score
+    setDisplayScore(0);
+    setScoreComplete(false);
+    
+    // Determine category based on score
+  let categoryValue;
+  if (score >= 10 && score <= 24) {
+    categoryValue = "dormant";
+    setCategory("dormant");
+  } else if (score >= 25 && score <= 39) {
+    categoryValue = "growing";
+    setCategory("growing");
+  } else {
+    categoryValue = "high";
+    setCategory("high");
+  }
+  
+  // Send data to backend - use the directly calculated categoryValue 
+  const addUser = async () => {
+    try {
+      const res = await api.post("/", {
+        ...userData,
+        totalScore: score,
+        category: categoryValue // Use the direct value, not the state
+      });
+      console.log("API response:", res);
+    } catch (error) {
+      console.error("API error:", error);
+    }
+  };
+  addUser();
   }, [userData]);
 
-  const handleLinkClick = () => {
-    const link = links[userData.statement];
-    if (link) {
-      window.open(link, '_blank');
-    } else {
-      console.log("error?");
+  useEffect(() => {
+    // Animate the score counting up
+    if (displayScore < totalScore) {
+      const timeout = setTimeout(() => {
+        setDisplayScore(prev => Math.min(prev + 1, totalScore));
+      }, 50);
+      return () => clearTimeout(timeout);
+    } else if (displayScore === totalScore && totalScore > 0) {
+      // Mark score animation as complete to trigger the next animations
+      const timeout = setTimeout(() => {
+        setScoreComplete(true);
+      }, 500); // Small delay after score finishes
+      return () => clearTimeout(timeout);
+    }
+  }, [displayScore, totalScore]);
+
+  const getCategoryName = () => {
+    switch(category) {
+      case "dormant": return "Dormant Potential";
+      case "growing": return "Growing Influence";
+      case "high": return "High-Impact Leader";
+      default: return "";
+    }
+  };
+
+  const getCategoryDescription = () => {
+    switch(category) {
+      case "dormant": return "You have influence in you, but it's not activated consistently.";
+      case "growing": return "You're aware of your influence and are building momentum.";
+      case "high": return "You're leading intentionally and living with purpose.";
+      default: return "";
     }
   };
 
   return (
-    <div>
-<div className="flex flex-col md:flex-column md:pt-8 items-center md:space-x-10 bg-white rounded-lg">
-  <motion.img
-    variants={itemVariants}
-    className="w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-pmmGold mb-6 md:mb-6"
-    src="https://uploads-ssl.webflow.com/65fded56193c91c4ae0eb328/662c1a8c2c50441c8e78a7df_Freddie-Scott-Avatar.jpg"
-    alt="Coach Freddie Scott"
-  />
+    <div className="max-w-3xl mx-auto">
 
-  <motion.div 
-    variants={itemVariants} 
-    className="text-gray-800 text-center md:text-left md:flex-grow"
-  >
-    <p className="text-center text-sm lg:text-lg font-medium mb-2 leading-snug pb-0">
-      I'm <span className="">Freddie Scott</span>, former <span className="">Pro Athlete</span>, <span className="">Transition Coach</span>, and <span className="">Advocate</span> for your success.
-
-
-
-      I'd like you to start with our{' '}
-      <span onClick={handleLinkClick} className="inline-block text-pmmGrit px-0 py-0 rounded-full font-bold mx-2 transform transition duration-300 hover:scale-105">
-        {statement2pillar[userData.statement]}
-      </span>{' '}
-      course.
-
-
-
-      To start, reflect on these key points.
-    </p>
-  </motion.div>
-</div>
-
-<motion.div 
-  variants={itemVariants} 
-  animate="visible" 
-  initial="hidden" 
-  className="mt-6 text-sm"
->
-  {strategies[userData.statement] && <PillarResults data={strategies[userData.statement]} />}
-</motion.div>
-
-<div className="flex justify-center mt-8">
-  <button 
-    onClick={handleLinkClick} 
-    className="text-sm md:text-base bg-pmmGrit hover:bg-pmmBlue text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105"
-  >
-    Take the Course
-  </button>
-</div>
-</div>
+      <motion.div
+        className="bg-white rounded-lg p-4"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        {/* Logo Section - Add this before the score section */}
+      <motion.div variants={itemVariants} custom={0} className="flex justify-center mb-6">
+        <img 
+          src={UTCLogo} 
+          alt="UTC Logo" 
+          className="h-14 md:h-6" // Adjust size as needed
+        />
+      </motion.div>
+        {/* Score Section - Always visible first */}
+        <motion.div variants={itemVariants} custom={0} className="text-center mb-6">
+          <h2 className="text-xl font-bold mb-2">Your Personal Impact Score</h2>
+          <motion.div 
+            className="text-4xl md:text-5xl font-bold text-pmmGrit mb-2"
+            key={totalScore}
+            animate={{ opacity: 1 }}
+          >
+            {displayScore}
+          </motion.div>
+          <p className="text-xs text-gray-500">Total Score Range: 10-50</p>
+          
+          <AnimatePresence>
+            {scoreComplete && (
+              <motion.div 
+                className="mt-4 py-2 px-3 bg-gray-50 rounded-lg"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+              >
+                <h3 className="font-bold text-lg mb-1">{getCategoryName()}</h3>
+                <p className="text-sm">{getCategoryDescription()}</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+        
+        {/* Action Plan Section - Appears after score completes */}
+        <AnimatePresence>
+          {scoreComplete && (
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.5, duration: 0.8 }}
+              className="mb-6"
+            >
+              <h2 className="text-lg font-bold mb-2">✅ Your Personalized Action Plan</h2>
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <h3 className="font-bold text-md mb-1">→ For {getCategoryName()}:</h3>
+                <ul className="list-disc pl-4 space-y-1 text-sm">
+                  {actionPlans[category] && actionPlans[category].map((action, index) => (
+                    <li key={index}>{action}</li>
+                  ))}
+                </ul>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        
+        {/* Collapsible Bonus Section - Appears after action plan */}
+        <AnimatePresence>
+          {scoreComplete && (
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 3, duration: 0.8 }}
+              className="mb-6"
+            >
+              <button 
+                className="text-left w-full flex justify-between items-center"
+                onClick={() => setShowBonus(!showBonus)}
+              >
+                <h2 className="text-lg font-bold">⏳ BONUS: 1-Day Influence Accelerator</h2>
+                <span>{showBonus ? '▲' : '▼'}</span>
+              </button>
+              
+              <AnimatePresence>
+                {showBonus && (
+                  <motion.div 
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <p className="text-sm mb-2">A quick-start plan to boost your influence in 24 hours.</p>
+                    
+                    <div className="space-y-2">
+                      {/* Morning */}
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <h3 className="font-bold text-sm mb-1">Morning:</h3>
+                        <ul className="list-disc pl-4 space-y-1 text-xs">
+                          <li>Reflect on your values and write down your personal mission.</li>
+                          <li>Text or call 3 people and encourage them specifically.</li>
+                        </ul>
+                      </div>
+                      
+                      {/* Afternoon */}
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <h3 className="font-bold text-sm mb-1">Afternoon:</h3>
+                        <ul className="list-disc pl-4 space-y-1 text-xs">
+                          <li>Share a short story or lesson online (or journal it).</li>
+                          <li>Evaluate how you spend your time – cut one thing that drains your focus.</li>
+                        </ul>
+                      </div>
+                      
+                      {/* Evening */}
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <h3 className="font-bold text-sm mb-1">Evening:</h3>
+                        <ul className="list-disc pl-4 space-y-1 text-xs">
+                          <li>Schedule a growth activity for the next 7 days.</li>
+                          <li>Write 3 things you want to be known for.</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        
+        {/* Call to Action - Appears last */}
+        <AnimatePresence>
+          {scoreComplete && (
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 4.5, duration: 0.8 }}
+              className="text-center"
+            >
+              <p className="mb-3 text-sm font-medium">Ready to level up your leadership?</p>
+              <div className="flex flex-col gap-2">
+                <a 
+                  href="https://learn.liveprosperous.com/pages/focus-fridays-signup-form" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="bg-pmmGrit hover:bg-pmmBlue text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-300 text-sm text-center cursor-pointer"
+                >
+                  Join Focus Friday Email
+                </a>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+    </div>
   );
 }
